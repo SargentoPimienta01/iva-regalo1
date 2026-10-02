@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>¡Feliz Día, Ivana! • Día 1: El Regalo del Trabajo 🔨✨</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Pixel / Retro -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        * {
+            touch-action: manipulation;
+        }
+        
+        .font-pixel {
+            font-family: 'Press Start 2P', cursive;
+        }
+        .font-sans-custom {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .font-serif-custom {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Canvas & Pixelated Graphics */
+        canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        /* Scanline Arcade Filter Effect */
+        .arcade-container {
+            position: relative;
+            background: #110e18;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(245, 158, 11, 0.2);
+        }
+
+        .arcade-container::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        /* Touch Control Buttons */
+        .btn-touch {
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .btn-touch:active {
+            transform: scale(0.92);
+            filter: brightness(1.25);
+        }
+
+        /* Float Animation */
+        @keyframes floatAnim {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+            animation: floatAnim 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-stone-950 text-stone-100 min-h-screen flex flex-col justify-between font-sans-custom select-none overflow-x-hidden p-2 sm:p-4">
+
+    <header class="max-w-md sm:max-w-xl mx-auto w-full text-center my-1 sm:my-2">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] sm:text-xs font-pixel mb-1.5">
+            <i class="fa-solid fa-gift text-amber-400"></i>
+            ¡PARA IVANA! • DÍA 1 DE 12
+        </div>
+        <h1 class="font-pixel text-base sm:text-xl md:text-2xl text-amber-400 tracking-wider leading-relaxed">
+            MISIÓN: CONSTRUYENDO CON ESFUERZO 🔨✨
+        </h1>
+        <p class="text-[11px] sm:text-xs text-stone-400 mt-1 max-w-sm mx-auto leading-normal">
+            ¡Comenzamos el camino a tu cumpleaños! Tu primer regalo inspirado en <i>El Regalo del Trabajo</i>.
+        </p>
+    </header>
+
+    <main class="max-w-md sm:max-w-xl mx-auto w-full flex-grow flex flex-col items-center justify-center relative">
+        
+        <!-- Arcade Frame -->
+        <div id="game-frame" class="w-full arcade-container rounded-2xl border-2 sm:border-4 border-amber-600/80 p-2 sm:p-4 relative overflow-hidden flex flex-col items-center">
+            
+            <!-- HUD / Bar de Puntuación Arcade -->
+            <div id="hud" class="w-full flex justify-between items-center bg-stone-900/90 border border-stone-700 px-3 py-2 rounded-xl mb-2 font-pixel text-[10px] sm:text-xs text-amber-300">
+                <div class="flex items-center gap-1">
+                    <span class="text-stone-400">PTS:</span>
+                    <span id="score-display" class="text-amber-400 font-bold">0</span>
+                    <span class="text-stone-500">/1000</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-stone-400">VIDAS:</span>
+                    <div id="lives-display" class="flex gap-1 text-rose-500 text-xs sm:text-sm">
+                        <i class="fa-solid fa-heart"></i>
+                        <i class="fa-solid fa-heart"></i>
+                        <i class="fa-solid fa-heart"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas de Juego (Full Responsive Aspect Ratio) -->
+            <div class="relative w-full aspect-[4/5] rounded-xl overflow-hidden bg-gradient-to-b from-stone-900 via-stone-950 to-amber-950/40 border border-amber-500/30 shadow-inner">
+                <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+                <!-- Overlay de Inicio / Pause -->
+                <div id="start-overlay" class="absolute inset-0 bg-stone-950/95 flex flex-col items-center justify-center p-4 sm:p-6 text-center z-20">
+                    <div class="text-4xl sm:text-5xl mb-2 animate-float">🔨✨</div>
+                    <h2 class="font-pixel text-sm sm:text-lg text-amber-400 mb-2">¡DESAFÍO PARA IVANA!</h2>
+                    <p class="text-xs text-stone-300 mb-4 max-w-xs leading-relaxed">
+                        ¡Hola Ivana! Nos preparamos para tu cumpleaños. Junta <b>Herramientas y Ladrillos</b> (+100 PTS) y esquiva las nubes de <b>Duda y Procrastinación</b>.
+                    </p>
+                    <button onclick="startGame()" class="btn-touch font-pixel text-xs bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 px-5 py-3 rounded-xl border-b-4 border-amber-800 font-bold active:translate-y-1 shadow-lg transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-play"></i> ¡INICIAR MISIÓN!
+                    </button>
+                    <div class="mt-3 text-[9px] sm:text-[10px] text-stone-500 font-pixel">
+                        Toca los botones abajo o usa el teclado [←][→][ESPACIO]
+                    </div>
+                </div>
+
+                <!-- Overlay Game Over -->
+                <div id="gameover-overlay" class="hidden absolute inset-0 bg-stone-950/95 flex flex-col items-center justify-center p-4 sm:p-6 text-center z-20">
+                    <div class="text-4xl sm:text-5xl mb-2 text-rose-500">🧱</div>
+                    <h2 class="font-pixel text-sm sm:text-lg text-rose-500 mb-2">¡CAÍSTE EN LA DISTRACCIÓN!</h2>
+                    <p class="text-xs text-stone-300 mb-5 max-w-xs">
+                        ¡Ánimo Ivana! El verdadero trabajo consiste en levantarse con más fuerza. ¡Inténtalo de nuevo!
+                    </p>
+                    <button onclick="startGame()" class="btn-touch font-pixel text-xs bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-400 hover:to-rose-500 text-white px-5 py-3 rounded-xl border-b-4 border-rose-800 font-bold active:translate-y-1 shadow-lg transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> INTENTAR DE NUEVO
+                    </button>
+                </div>
+            </div>
+
+            <!-- Controles Táctiles Optimizados para Teléfono -->
+            <div class="w-full grid grid-cols-3 gap-2 mt-2 pt-1 border-t border-stone-800/80">
+                <button id="btn-left" class="btn-touch bg-stone-800/90 active:bg-amber-600 border-2 border-stone-600 active:border-amber-400 rounded-xl py-3 text-white text-xl font-bold flex items-center justify-center shadow-md touch-none">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <button id="btn-jump" class="btn-touch bg-amber-500 active:bg-amber-400 border-2 border-amber-300 rounded-xl py-3 text-stone-950 font-pixel text-xs font-bold flex items-center justify-center gap-1 shadow-md touch-none">
+                    <i class="fa-solid fa-angles-up text-base"></i> SALTAR
+                </button>
+                <button id="btn-right" class="btn-touch bg-stone-800/90 active:bg-amber-600 border-2 border-stone-600 active:border-amber-400 rounded-xl py-3 text-white text-xl font-bold flex items-center justify-center shadow-md touch-none">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+
+        </div>
+
+        <div id="victory-card" class="hidden w-full bg-gradient-to-b from-stone-900 via-stone-900 to-amber-950/70 rounded-3xl p-5 sm:p-7 border-2 border-amber-400/80 shadow-2xl relative overflow-hidden transition-all duration-700">
+            
+            <!-- Glow background effect -->
+            <div class="absolute -top-20 -right-20 w-40 h-40 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="text-center mb-4 sm:mb-6">
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-[10px] font-pixel mb-2 border border-amber-500/40">
+                    <i class="fa-solid fa-crown text-amber-400"></i> ¡REGALO 1 DESBLOQUEADO!
+                </div>
+                <h2 class="font-serif-custom text-2xl sm:text-3xl font-bold text-amber-200">
+                    ¡Feliz Día, Ivana! 🎉
+                </h2>
+                <span class="block text-amber-400 text-xs font-semibold mt-1">Día 1: El Regalo del Trabajo</span>
+                <div class="w-16 h-1 bg-gradient-to-r from-amber-500 to-amber-300 mx-auto mt-2 rounded-full"></div>
+            </div>
+
+            <!-- Carta Emotiva estilo El Último Regalo -->
+            <div class="bg-stone-950/85 rounded-2xl p-4 sm:p-6 border border-amber-500/30 text-stone-200 space-y-3.5 text-xs sm:text-sm leading-relaxed font-sans-custom relative">
+                
+                <p class="font-serif-custom italic text-sm sm:text-base text-amber-300 border-l-2 border-amber-400 pl-3">
+                    "El trabajo no es una carga ni una simple rutina; es la valiosa herramienta con la que pintamos nuestra dignidad y alcanzamos nuestros sueños."
+                </p>
+
+                <p>
+                    <b>Querida Ivana:</b> Hoy comenzamos la cuenta regresiva especial para celebrar tu cumpleaños con el primero de <b>12 regalos inolvidables</b>. Queremos empezar reconociendo una de tus virtudes más hermosas: <b>tu capacidad de esfuerzo, dedicación y entrega incansable.</b>
+                </p>
+
+                <!-- Cita Bíblica Destacada -->
+                <div class="bg-amber-950/40 border-l-4 border-amber-400 p-3 rounded-r-xl text-amber-200 my-2 italic text-xs sm:text-sm">
+                    <p class="font-serif-custom">
+                        "Y todo lo que hagáis, hacedlo de corazón, como para el Señor y no para los hombres; sabiendo que del Señor recibiréis la recompensa de la herencia..."
+                    </p>
+                    <span class="block font-bold text-right text-[10px] sm:text-xs text-amber-400 font-sans-custom not-italic mt-1">— Colosenses 3:23-24</span>
+                </div>
+
+                <p>
+                    Como enseña la película <i>El Último Regalo</i>, quien aprende a valorar la satisfacción del trabajo bien hecho y persevera con fe ante cualquier obstáculo, posee una riqueza eterna. Verte trabajar día a día con tanta pasión es un orgullo y un regalo para todos los que te rodeamos.
+                </p>
+
+                <!-- Detalle del regalo real -->
+                <div class="bg-gradient-to-r from-amber-950 to-stone-900 rounded-xl p-3.5 border border-amber-400/50 flex items-center gap-3 text-amber-200 mt-2">
+                    <div class="text-2xl sm:text-3xl text-amber-400 shrink-0">
+                        <i class="fa-solid fa-mug-hot"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold block text-[10px] sm:text-xs uppercase tracking-wider text-amber-400 font-pixel">Tu regalo especial de hoy:</span>
+                        <span class="text-stone-300 text-xs">Un delicioso café y desayuno especial preparado especialmente para ti, para acompañar tu jornada de hoy. ☕✨</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex flex-col sm:flex-row gap-2.5 mt-5">
+                <button onclick="copyLetter()" class="flex-1 py-3 px-4 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-xl text-xs font-pixel transition-all flex items-center justify-center gap-2 shadow-lg">
+                    <i class="fa-regular fa-copy"></i> COPIAR MENSAJE
+                </button>
+                <button onclick="resetGameView()" class="py-3 px-4 bg-stone-800 hover:bg-stone-700 text-amber-300 font-semibold rounded-xl text-xs font-pixel transition-all border border-stone-700 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-gamepad"></i> JUGAR DE NUEVO
+                </button>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Toast Component -->
+    <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-amber-400 text-stone-950 px-4 py-2 rounded-full font-pixel text-[10px] font-bold shadow-2xl opacity-0 transition-opacity duration-300 pointer-events-none z-50 flex items-center gap-2">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-text">¡Mensaje copiado para Ivana!</span>
+    </div>
+
+    <script>
+        // Audio Synthesizer for Retro 8-bit Sound Effects
+        const AudioFX = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            playJump() {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.15);
+                } catch(e) {}
+            },
+            playCollect() {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.08); // E5
+                    osc.frequency.setValueAtTime(783.99, this.ctx.currentTime + 0.16); // G5
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.25);
+                } catch(e) {}
+            },
+            playHurt() {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(60, this.ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.2);
+                } catch(e) {}
+            },
+            playWin() {
+                if (!this.ctx) return;
+                try {
+                    const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+                    notes.forEach((freq, idx) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.1);
+                        gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.1);
+                        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.1 + 0.2);
+                        osc.start(this.ctx.currentTime + idx * 0.1);
+                        osc.stop(this.ctx.currentTime + idx * 0.1 + 0.2);
+                    });
+                } catch(e) {}
+            }
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Target Mobile Canvas Resolution
+        const GAME_WIDTH = 360;
+        const GAME_HEIGHT = 450;
+        canvas.width = GAME_WIDTH;
+        canvas.height = GAME_HEIGHT;
+
+        // Game Variables
+        let score = 0;
+        let lives = 3;
+        let isPlaying = false;
+        let animationFrameId = null;
+
+        // Player Object
+        const player = {
+            x: GAME_WIDTH / 2 - 12,
+            y: GAME_HEIGHT - 60,
+            width: 24,
+            height: 28,
+            vx: 0,
+            vy: 0,
+            speed: 4.2,
+            jumpPower: -8.8,
+            gravity: 0.38,
+            grounded: false,
+            color: '#f59e0b',
+            direction: 'right'
+        };
+
+        // Entities Arrays
+        let platforms = [];
+        let items = [];
+        let hazards = [];
+        let particles = [];
+
+        // Keys state
+        const keys = {
+            left: false,
+            right: false,
+            up: false
+        };
+
+        function initEntities() {
+            score = 0;
+            lives = 3;
+            updateHUD();
+
+            player.x = GAME_WIDTH / 2 - 12;
+            player.y = GAME_HEIGHT - 60;
+            player.vx = 0;
+            player.vy = 0;
+
+            platforms = [];
+            items = [];
+            hazards = [];
+            particles = [];
+
+            // Base Ground Platform
+            platforms.push({
+                x: 0,
+                y: GAME_HEIGHT - 20,
+                width: GAME_WIDTH,
+                height: 20,
+                type: 'solid',
+                color: '#78350f'
+            });
+
+            // Random Floating Platforms
+            const numPlatforms = 6;
+            for (let i = 0; i < numPlatforms; i++) {
+                const py = GAME_HEIGHT - 70 - (i * 65);
+                const px = Math.random() * (GAME_WIDTH - 80);
+                platforms.push({
+                    x: px,
+                    y: py,
+                    width: 75,
+                    height: 12,
+                    type: i % 3 === 0 ? 'moving' : 'static',
+                    vx: i % 3 === 0 ? (Math.random() > 0.5 ? 1.5 : -1.5) : 0,
+                    color: '#b45309'
+                });
+
+                // Spawn Item on platform
+                if (Math.random() > 0.2) {
+                    items.push({
+                        x: px + 28,
+                        y: py - 24,
+                        width: 18,
+                        height: 18,
+                        type: ['hammer', 'brick', 'seed'][Math.floor(Math.random() * 3)],
+                        collected: false
+                    });
+                }
+            }
+
+            // Spawn Hazards
+            hazards.push({
+                x: 40,
+                y: 120,
+                width: 22,
+                height: 22,
+                vx: 1.8,
+                name: 'Duda'
+            });
+            hazards.push({
+                x: 200,
+                y: 220,
+                width: 22,
+                height: 22,
+                vx: -1.5,
+                name: 'Procrastinación'
+            });
+        }
+
+        function spawnParticles(x, y, color, count = 8) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    size: Math.random() * 3 + 2,
+                    color: color,
+                    life: 1.0
+                });
+            }
+        }
+
+        function update() {
+            if (!isPlaying) return;
+
+            // Player Horizontal Movement
+            if (keys.left) {
+                player.vx = -player.speed;
+                player.direction = 'left';
+            } else if (keys.right) {
+                player.vx = player.speed;
+                player.direction = 'right';
+            } else {
+                player.vx *= 0.8;
+            }
+
+            // Jump
+            if (keys.up && player.grounded) {
+                player.vy = player.jumpPower;
+                player.grounded = false;
+                AudioFX.playJump();
+            }
+
+            // Apply Gravity
+            player.vy += player.gravity;
+
+            // Update Position
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // Screen Boundaries (Wrap around left/right)
+            if (player.x < -player.width) player.x = GAME_WIDTH;
+            if (player.x > GAME_WIDTH) player.x = -player.width;
+
+            // Platform Collision Detection
+            player.grounded = false;
+            platforms.forEach(plat => {
+                // Moving Platforms logic
+                if (plat.type === 'moving') {
+                    plat.x += plat.vx;
+                    if (plat.x <= 0 || plat.x + plat.width >= GAME_WIDTH) {
+                        plat.vx *= -1;
+                    }
+                }
+
+                // Landing on platform from above
+                if (player.vy > 0 &&
+                    player.x + player.width > plat.x &&
+                    player.x < plat.x + plat.width &&
+                    player.y + player.height >= plat.y &&
+                    player.y + player.height <= plat.y + 12) {
+                    
+                    player.y = plat.y - player.height;
+                    player.vy = 0;
+                    player.grounded = true;
+
+                    // Move player with moving platform
+                    if (plat.type === 'moving') {
+                        player.x += plat.vx;
+                    }
+                }
+            });
+
+            // Items Collection Logic
+            items.forEach(item => {
+                if (!item.collected &&
+                    player.x + player.width > item.x &&
+                    player.x < item.x + item.width &&
+                    player.y + player.height > item.y &&
+                    player.y < item.y + item.height) {
+                    
+                    item.collected = true;
+                    score += 100;
+                    AudioFX.playCollect();
+                    spawnParticles(item.x + 9, item.y + 9, '#fbbf24', 12);
+                    updateHUD();
+
+                    // Respawn item higher after delay
+                    setTimeout(() => {
+                        item.y = Math.random() * (GAME_HEIGHT - 120) + 40;
+                        item.x = Math.random() * (GAME_WIDTH - 30);
+                        item.collected = false;
+                    }, 2500);
+
+                    // Check Win Condition
+                    if (score >= 1000) {
+                        triggerWin();
+                    }
+                }
+            });
+
+            // Hazards Collisions
+            hazards.forEach(haz => {
+                haz.x += haz.vx;
+                if (haz.x <= 10 || haz.x + haz.width >= GAME_WIDTH - 10) haz.vx *= -1;
+
+                if (player.x + player.width > haz.x &&
+                    player.x < haz.x + haz.width &&
+                    player.y + player.height > haz.y &&
+                    player.y < haz.y + haz.height) {
+                    
+                    // Player hit hazard
+                    lives--;
+                    AudioFX.playHurt();
+                    spawnParticles(player.x + 12, player.y + 14, '#f43f5e', 16);
+                    updateHUD();
+
+                    // Knockback player
+                    player.vy = -6;
+                    player.x += haz.vx > 0 ? 30 : -30;
+
+                    if (lives <= 0) {
+                        gameOver();
+                    }
+                }
+            });
+
+            // Fall Off Bottom
+            if (player.y > GAME_HEIGHT) {
+                lives--;
+                AudioFX.playHurt();
+                updateHUD();
+                if (lives <= 0) {
+                    gameOver();
+                } else {
+                    // Respawn top
+                    player.x = GAME_WIDTH / 2 - 12;
+                    player.y = 100;
+                    player.vy = 0;
+                }
+            }
+
+            // Update Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.04;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function render() {
+            // Clear Canvas with Retro Sky Background
+            ctx.fillStyle = '#1c1917';
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+            // Draw Background Stars/Grid
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.08)';
+            for (let i = 0; i < GAME_WIDTH; i += 20) {
+                for (let j = 0; j < GAME_HEIGHT; j += 20) {
+                    ctx.fillRect(i + 9, j + 9, 2, 2);
+                }
+            }
+
+            // Draw Platforms
+            platforms.forEach(plat => {
+                ctx.fillStyle = plat.color;
+                ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
+                // Highlight border
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillRect(plat.x, plat.y, plat.width, 2);
+            });
+
+            // Draw Items (Pixel Art Icons)
+            items.forEach(item => {
+                if (!item.collected) {
+                    ctx.fillStyle = '#f59e0b';
+                    if (item.type === 'hammer') {
+                        ctx.fillText('🔨', item.x, item.y + 14);
+                    } else if (item.type === 'brick') {
+                        ctx.fillText('🧱', item.x, item.y + 14);
+                    } else {
+                        ctx.fillText('🌱', item.x, item.y + 14);
+                    }
+                }
+            });
+
+            // Draw Hazards (Enemies)
+            hazards.forEach(haz => {
+                ctx.font = '16px sans-serif';
+                ctx.fillText('👾', haz.x, haz.y + 16);
+            });
+
+            // Draw Player Character (Pixel Hero)
+            ctx.fillStyle = player.color;
+            // Body
+            ctx.fillRect(player.x + 4, player.y + 8, 16, 16);
+            // Head/Helmet
+            ctx.fillStyle = '#fef08a';
+            ctx.fillRect(player.x + 2, player.y, 20, 8);
+            // Eyes
+            ctx.fillStyle = '#000';
+            const eyeX = player.direction === 'right' ? player.x + 14 : player.x + 6;
+            ctx.fillRect(eyeX, player.y + 3, 4, 4);
+
+            // Draw Particles
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                ctx.globalAlpha = 1.0;
+            });
+        }
+
+        function gameLoop() {
+            update();
+            render();
+            if (isPlaying) {
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('score-display').innerText = score;
+            const livesContainer = document.getElementById('lives-display');
+            livesContainer.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                if (i < lives) {
+                    livesContainer.innerHTML += '<i class="fa-solid fa-heart"></i>';
+                } else {
+                    livesContainer.innerHTML += '<i class="fa-regular fa-heart opacity-30"></i>';
+                }
+            }
+        }
+
+        function startGame() {
+            AudioFX.init();
+            document.getElementById('start-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
+            initEntities();
+            isPlaying = true;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            gameLoop();
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            document.getElementById('gameover-overlay').classList.remove('hidden');
+        }
+
+        function triggerWin() {
+            isPlaying = false;
+            AudioFX.playWin();
+
+            // Arcade Confetti Explosion
+            confetti({
+                particleCount: 150,
+                spread: 80,
+                origin: { y: 0.6 },
+                colors: ['#f59e0b', '#fbbf24', '#d97706', '#ffffff']
+            });
+
+            // Hide Game Frame, Show Victory Card
+            setTimeout(() => {
+                document.getElementById('game-frame').classList.add('hidden');
+                const victoryCard = document.getElementById('victory-card');
+                victoryCard.classList.remove('hidden');
+            }, 600);
+        }
+
+        function resetGameView() {
+            document.getElementById('victory-card').classList.add('hidden');
+            document.getElementById('game-frame').classList.remove('hidden');
+            document.getElementById('start-overlay').classList.remove('hidden');
+        }
+
+        function copyLetter() {
+            const letterText = `🎁 Día 1: El Regalo del Trabajo (Para Ivana)\n\n"Y todo lo que hagáis, hacedlo de corazón, como para el Señor y no para los hombres..." — Colosenses 3:23\n\n¡Querida Ivana! Hoy empezamos el camino de tus 12 regalos de cumpleaños reconociendo tu dedicación, esfuerzo y fe diaria. ¡Feliz Cumpleaños! 🎉✨`;
+            
+            const temp = document.createElement("textarea");
+            temp.value = letterText;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand("copy");
+            document.body.removeChild(temp);
+
+            showToast("¡Mensaje copiado para Ivana!");
+        }
+
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-text').innerText = text;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 3000);
+        }
+
+        // Keyboard Controls
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') {
+                keys.up = true;
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') keys.up = false;
+        });
+
+        // Touch Control Buttons (Native Touch Handling)
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnJump = document.getElementById('btn-jump');
+
+        const setupTouchBtn = (elem, keyName) => {
+            const startPress = (e) => {
+                e.preventDefault();
+                AudioFX.init();
+                keys[keyName] = true;
+            };
+            const endPress = (e) => {
+                e.preventDefault();
+                keys[keyName] = false;
+            };
+
+            elem.addEventListener('touchstart', startPress, { passive: false });
+            elem.addEventListener('touchend', endPress, { passive: false });
+            elem.addEventListener('mousedown', startPress);
+            elem.addEventListener('mouseup', endPress);
+            elem.addEventListener('mouseleave', endPress);
+        };
+
+        setupTouchBtn(btnLeft, 'left');
+        setupTouchBtn(btnRight, 'right');
+        setupTouchBtn(btnJump, 'up');
+
+        // Initial Render on Load
+        render();
+    </script>
+</body>
+</html>
